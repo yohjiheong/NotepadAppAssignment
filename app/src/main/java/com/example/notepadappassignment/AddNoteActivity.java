@@ -33,9 +33,9 @@ public class AddNoteActivity extends AppCompatActivity {
         binding = ActivityAddNoteBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        title = findViewById(R.id.noteTitle);
-        content = findViewById(R.id.noteContent);
-        imageButton = findViewById(R.id.back);
+        title = binding.noteTitle;
+        content = binding.noteContent;
+        imageButton = binding.back;
 
         index = getIntent().getIntExtra("data", -1);
         if(index == -1){

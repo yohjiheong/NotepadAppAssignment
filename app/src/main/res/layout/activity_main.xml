@@ -12,11 +12,13 @@
     tools:context=".MainActivity">
 
     <!-- Main Body View -->
-    <include layout="@layout/main_layout" />
+    <include
+        android:id="@+id/main_layout"
+        layout="@layout/main_layout" />
 
     <!-- Navigation Drawer View -->
     <com.google.android.material.navigation.NavigationView
-        android:id="@+id/nav_drawer_view"
+        android:id="@+id/navDrawer"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_gravity="start"

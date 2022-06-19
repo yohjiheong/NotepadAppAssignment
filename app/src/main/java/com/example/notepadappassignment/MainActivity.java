@@ -32,9 +32,7 @@ import java.util.HashSet;
 
 public class MainActivity extends AppCompatActivity {
 
-    Layout layout;
     NavigationView navigationView;
-    Toolbar toolbar;
     DrawerLayout drawerLayout;
     ActionBarDrawerToggle actionBarDrawerToggle;
     FloatingActionButton floating_action_button;
@@ -46,6 +44,7 @@ public class MainActivity extends AppCompatActivity {
     static ArrayAdapter arrayAdapter;
     ActivityMainBinding binding;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -54,25 +53,25 @@ public class MainActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         // Navigation Drawer
-        toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+//        toolbar = findViewById(R.id.searchBar);
+        setSupportActionBar(binding.mainLayout.toolbar);
 
         getSupportActionBar().setDisplayShowTitleEnabled(false);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
 
-        drawerLayout = findViewById(R.id.drawer_layout);
+        drawerLayout = binding.drawerLayout;
         actionBarDrawerToggle = new ActionBarDrawerToggle(this, drawerLayout, R.string.open_nav, R.string.close_nav);
         drawerLayout.addDrawerListener(actionBarDrawerToggle);
         actionBarDrawerToggle.syncState();
 
-        navigationView = findViewById(R.id.nav_drawer_view);
+        navigationView = binding.navDrawer;
         navigationView.setNavigationItemSelectedListener(this::onNavigationItemSelected);
 
 
 
         // floating action button to add
-        floating_action_button = findViewById(R.id.fab);
+        floating_action_button = binding.mainLayout.fab;
         floating_action_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -94,13 +93,13 @@ public class MainActivity extends AppCompatActivity {
             arrayListContent = new ArrayList<>(hashSetContent);
         }
 
-        gridView = findViewById(R.id.gridView);
+        gridView = binding.mainLayout.gridView;
         arrayAdapter = new ArrayAdapter(this, R.layout.grid_layout, R.id.text1, arrayListTitle) {
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
                 View view = super.getView(position, convertView, parent);
-                TextView text1 = (TextView) view.findViewById(R.id.text1);
-                TextView text2 = (TextView) view.findViewById(R.id.text2);
+                TextView text1 = view.findViewById(R.id.text1);
+                TextView text2 = view.findViewById(R.id.text2);
 
                 text1.setText(arrayListTitle.get(position).trim());
                 text2.setText(arrayListContent.get(position).trim());
@@ -156,12 +155,10 @@ public class MainActivity extends AppCompatActivity {
 
     public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
         int id = menuItem.getItemId();
-        switch (id) {
-            case R.id.allNotes:
-                Intent intent = new Intent(MainActivity.this, MainActivity.class);
-                startActivity(intent);
-                drawerLayout.closeDrawer(GravityCompat.START);
-                break;
+        if (id == R.id.allNotes) {
+            Intent intent = new Intent(MainActivity.this, MainActivity.class);
+            startActivity(intent);
+            drawerLayout.closeDrawer(GravityCompat.START);
         }
         return true;
     }
