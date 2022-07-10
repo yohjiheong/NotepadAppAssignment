@@ -1,29 +1,32 @@
 package com.example.notepadappassignment;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
 
 import com.example.notepadappassignment.databinding.ActivityAddNoteBinding;
 
-import java.util.Collections;
-import java.util.HashSet;
 
 public class AddNoteActivity extends AppCompatActivity {
 
-    int index;
     ActivityAddNoteBinding binding;
-    SharedPreferences sharedPreferences;
 
     ImageButton imageButton;
     EditText title;
     EditText content;
+
+    public static final String EXTRA_ID =
+            "com.bdtask.architectureexample.EXTRA_ID";
+    public static final String EXTRA_TITLE =
+            "com.bdtask.architectureexample.EXTRA_TITLE";
+    public static final String EXTRA_DESCRIPTION =
+            "com.bdtask.architectureexample.EXTRA_DESCRIPTION";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,39 +40,32 @@ public class AddNoteActivity extends AppCompatActivity {
         content = binding.noteContent;
         imageButton = binding.back;
 
-        index = getIntent().getIntExtra("data", -1);
-        if(index == -1){
-            MainActivity.arrayListTitle.add("");
-            MainActivity.arrayListContent.add("");
-            index = MainActivity.arrayListTitle.size()-1;
-            MainActivity.arrayAdapter.notifyDataSetChanged();
+        Intent intent = getIntent();
+        if(intent.hasExtra(EXTRA_ID)) {
+            setTitle("Edit Note");
+            title.setText(intent.getStringExtra(EXTRA_TITLE));
+            content.setText(intent.getStringExtra(EXTRA_DESCRIPTION));
         } else {
-            title.setText(MainActivity.arrayListTitle.get(index));
-            content.setText(MainActivity.arrayListContent.get(index));
+            setTitle("Add Note");
         }
 
-        imageButton.setOnClickListener(new View.OnClickListener(){
-            public void onClick(View v){
-                MainActivity.arrayListTitle.set(index, title.getText().toString());
-                MainActivity.arrayListContent.set(index, content.getText().toString());
-                MainActivity.arrayAdapter.notifyDataSetChanged();
+        imageButton.setOnClickListener(view -> {
+            Intent data = new Intent();
+            data.putExtra(EXTRA_TITLE, title.getText().toString());
+            data.putExtra(EXTRA_DESCRIPTION, content.getText().toString());
 
-                sharedPreferences = getApplicationContext().getSharedPreferences(
-                        "com.example.notepadappassignment",
-                        MODE_PRIVATE
-                );
-
-                HashSet<String> hashSetTitle = new HashSet<String>(MainActivity.arrayListTitle);
-                HashSet<String> hashSetContent = new HashSet<String>(MainActivity.arrayListContent);
-                SharedPreferences.Editor sharedPreferencesEditor = sharedPreferences.edit();
-                sharedPreferencesEditor.putStringSet("title", hashSetTitle);
-                sharedPreferencesEditor.putStringSet("description", hashSetContent);
-                sharedPreferencesEditor.apply();
-
-                Intent intent = new Intent(AddNoteActivity.this, MainActivity.class);
-                startActivity(intent);
-                finish();
+            int id = getIntent().getIntExtra(EXTRA_ID,-1);
+            if (id != -1){
+                data.putExtra(EXTRA_ID,id);
             }
+
+            setResult(RESULT_OK, data);
+            finish();
+
         });
+
     }
+
+
+
 }

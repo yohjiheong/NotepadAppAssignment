@@ -1,34 +1,25 @@
 package com.example.notepadappassignment;
 
-import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.text.Layout;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.GridView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.lifecycle.ViewModelProviders;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.notepadappassignment.databinding.ActivityMainBinding;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -36,13 +27,13 @@ public class MainActivity extends AppCompatActivity {
     DrawerLayout drawerLayout;
     ActionBarDrawerToggle actionBarDrawerToggle;
     FloatingActionButton floating_action_button;
-    GridView gridView;
-
-    SharedPreferences sharedPreferences;
-    static ArrayList<String> arrayListTitle = new ArrayList<String>();
-    static ArrayList<String> arrayListContent = new ArrayList<String>();
-    static ArrayAdapter arrayAdapter;
+    RecyclerView recyclerView;
     ActivityMainBinding binding;
+
+    private NoteViewModel noteViewModel;
+
+    public static final int ADD_NOTE_REQ = 1;
+    public static final int EDIT_NOTE_REQ = 2;
 
 
     @Override
@@ -54,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Navigation Drawer
 //        toolbar = findViewById(R.id.searchBar);
-        setSupportActionBar(binding.mainLayout.toolbar);
+        setSupportActionBar(findViewById(R.id.toolbar));
 
         getSupportActionBar().setDisplayShowTitleEnabled(false);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -71,86 +62,68 @@ public class MainActivity extends AppCompatActivity {
 
 
         // floating action button to add
-        floating_action_button = binding.mainLayout.fab;
-        floating_action_button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(MainActivity.this, AddNoteActivity.class);
-                startActivity(intent);
-            }
+        floating_action_button = findViewById(R.id.fab);
+        floating_action_button.setOnClickListener(view -> {
+            Intent intent = new Intent(MainActivity.this, AddNoteActivity.class);
+            startActivityForResult(intent, ADD_NOTE_REQ);
         });
 
-        // shared preferences
-        sharedPreferences = getApplicationContext().getSharedPreferences(
-                "com.example.notepadappassignment",
-                MODE_PRIVATE
-        );
+        recyclerView = findViewById(R.id.recycler_view);
+        GridLayoutManager layoutManager = new GridLayoutManager(this, 2);
+        recyclerView.setLayoutManager(layoutManager);
 
-        HashSet<String> hashSetTitle = (HashSet<String>) sharedPreferences.getStringSet("title", null);
-        HashSet<String> hashSetContent = (HashSet<String>) sharedPreferences.getStringSet("content", null);
-        if (hashSetTitle != null && hashSetContent != null) {
-            arrayListTitle = new ArrayList<>(hashSetTitle);
-            arrayListContent = new ArrayList<>(hashSetContent);
+        final NoteAdapter adapter = new NoteAdapter();
+        recyclerView.setAdapter(adapter);
+
+        noteViewModel = ViewModelProviders.of(this).get(NoteViewModel.class);
+        noteViewModel.getAllNotes().observe( this, notes -> adapter. submitList(notes));
+
+        adapter.setOnItemClickListener(note -> {
+            Intent intent = new Intent(MainActivity.this, AddNoteActivity.class);
+            intent.putExtra(AddNoteActivity.EXTRA_ID, note.getId());
+            intent.putExtra(AddNoteActivity.EXTRA_TITLE, note.getTitle());
+            intent.putExtra(AddNoteActivity.EXTRA_DESCRIPTION, note.getDescription());
+            startActivityForResult(intent, EDIT_NOTE_REQ);
+        });
+
+        adapter.setOnItemLongClickListener(note -> new AlertDialog.Builder(MainActivity.this)
+                .setTitle("Delete Note")
+                .setMessage("Are you sure?")
+                .setPositiveButton(
+                        "Yes", (dialog, which) -> noteViewModel.delete(note)
+                ).setNegativeButton("No",null).show());
+
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == ADD_NOTE_REQ && resultCode == RESULT_OK) {
+            String title = data.getStringExtra(AddNoteActivity.EXTRA_TITLE);
+            String description = data.getStringExtra(AddNoteActivity.EXTRA_DESCRIPTION);
+
+            Note note = new Note(title, description);
+            noteViewModel.insert(note);
+
+        } else if (requestCode == EDIT_NOTE_REQ && resultCode == RESULT_OK) {
+            int id = data.getIntExtra(AddNoteActivity.EXTRA_ID, -1);
+
+            if (id == -1){
+                Toast.makeText(this, "Note Update Failed", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            String title = data.getStringExtra(AddNoteActivity.EXTRA_TITLE);
+            String description = data.getStringExtra(AddNoteActivity.EXTRA_DESCRIPTION);
+
+            Note note = new Note(title, description);
+            note.setId(id);
+            noteViewModel.update(note);
+
+        } else {
+            Toast.makeText(this, "Note not saved", Toast.LENGTH_SHORT).show();
         }
-
-        gridView = binding.mainLayout.gridView;
-        arrayAdapter = new ArrayAdapter(this, R.layout.grid_layout, R.id.text1, arrayListTitle) {
-            @Override
-            public View getView(int position, View convertView, ViewGroup parent) {
-                View view = super.getView(position, convertView, parent);
-                TextView text1 = view.findViewById(R.id.text1);
-                TextView text2 = view.findViewById(R.id.text2);
-
-                text1.setText(arrayListTitle.get(position).trim());
-                text2.setText(arrayListContent.get(position).trim());
-                return view;
-            }
-        };
-        gridView.setAdapter(arrayAdapter);
-
-        // tap short to edit existing note
-        gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
-                String s = (String) adapterView.getItemAtPosition(position);
-                Intent intent = new Intent(MainActivity.this, AddNoteActivity.class);
-                intent.putExtra("data", position);
-                startActivity(intent);
-            }
-        });
-
-
-        gridView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long id) {
-                new AlertDialog.Builder(MainActivity.this)
-                        .setTitle("Delete Note")
-                        .setMessage("Are you sure?")
-                        .setPositiveButton(
-                                "Yes", new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which) {
-                                        arrayListTitle.remove(position);
-                                        arrayListContent.remove(position);
-                                        arrayAdapter.notifyDataSetChanged();
-
-                                        sharedPreferences = getApplicationContext().getSharedPreferences("com.example.notepadappassignment", Context.MODE_PRIVATE);
-                                        HashSet<String> hashSetTitle = new HashSet<String>(MainActivity.arrayListTitle);
-                                        HashSet<String> hashSetContent = new HashSet<String>(MainActivity.arrayListContent);
-
-                                        SharedPreferences.Editor sharedPreferenceEditor = sharedPreferences.edit();
-                                        sharedPreferenceEditor.putStringSet("title", hashSetTitle);
-                                        sharedPreferenceEditor.putStringSet("content", hashSetContent);
-                                        sharedPreferenceEditor.apply();
-                                        Toast.makeText(MainActivity.this, "Deleted successfully!", Toast.LENGTH_SHORT).show();
-                                    }
-                                }
-                        ).setNegativeButton("No", null).show();
-
-                return true;
-            }
-        });
-
     }
 
     public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
