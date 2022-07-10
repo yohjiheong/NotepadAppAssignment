@@ -9,6 +9,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.Toast;
 
 import com.example.notepadappassignment.databinding.ActivityAddNoteBinding;
 
@@ -42,14 +43,19 @@ public class AddNoteActivity extends AppCompatActivity {
 
         Intent intent = getIntent();
         if(intent.hasExtra(EXTRA_ID)) {
-            setTitle("Edit Note");
             title.setText(intent.getStringExtra(EXTRA_TITLE));
             content.setText(intent.getStringExtra(EXTRA_DESCRIPTION));
-        } else {
-            setTitle("Add Note");
         }
 
         imageButton.setOnClickListener(view -> {
+            String EditTextTitle = title.getText().toString();
+            String EditTextDescription = content.getText().toString();
+
+            if (EditTextTitle.trim().isEmpty() || EditTextDescription.trim().isEmpty()) {
+                Toast.makeText(this, "Please insert a tile and description", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
             Intent data = new Intent();
             data.putExtra(EXTRA_TITLE, title.getText().toString());
             data.putExtra(EXTRA_DESCRIPTION, content.getText().toString());
